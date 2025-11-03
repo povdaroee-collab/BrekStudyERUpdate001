@@ -440,6 +440,8 @@ function App() {
     try {
       await set(newRecordRef, {
         studentId: studentId, 
+        studentName: student.name || null, // !! ថ្មី !!: រក្សាទុកឈ្មោះ
+        studentPhotoUrl: student.photoUrl || null, // !! ថ្មី !!: រក្សាទុក Link រូបថត
         date: appSetup.todayString,
         checkInTime: null,
         checkOutTime: now.toISOString(), 
@@ -1155,4 +1157,5 @@ function App() {
 const container = document.getElementById('root');
 const root = ReactDOM.createRoot(container);
 root.render(<App />);
+
 
