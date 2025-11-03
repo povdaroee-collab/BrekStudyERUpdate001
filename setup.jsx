@@ -27,8 +27,7 @@ const { useState, useEffect } = React;
 // 2. CONSTANTS & CONFIGS
 // =================================================================
 
-// !! កែសម្រួល !!: លុប OVERTIME_LIMIT_MINUTES ចេញ (ឥឡូវទាញពី Firebase)
-// const OVERTIME_LIMIT_MINUTES = 15; 
+// !! បានកែសម្រួល !!: លុប OVERTIME_LIMIT_MINUTES ចេញ (ឥឡូវទាញពី Firebase)
 
 const firebaseConfigRead = {
   apiKey: "AIzaSyAc2g-t9A7du3K_nI2fJnw_OGxhmLfpP6s",
