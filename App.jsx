@@ -447,10 +447,13 @@ function App() {
         passNumber: nextPassNumber 
       });
       
-      setSearchTerm('');
-      setSelectedStudentId('');
-      // setSearchResults([]); // !! លុប !!
-      setIsSearchFocused(false); 
+      // !! កែសម្រួល !!: យឺតពេល 3 វិនាទី តាមសំណើ
+      setTimeout(() => {
+        setSearchTerm('');
+        setSelectedStudentId('');
+        setIsSearchFocused(false); 
+      }, 3000); // 3 វិនាទី
+
     } catch (error) {
       console.error('Check-out Error (dbWrite):', error);
       setAuthError(`Check-out Error: ${error.message}`);
@@ -483,10 +486,12 @@ function App() {
       });
       console.log(`Check-in update sent for ${student.name}`);
       
-      setSearchTerm(''); 
-      setSelectedStudentId(''); 
-      // setSearchResults([]); // !! លុប !!
-      setIsSearchFocused(false); 
+      // !! កែសម្រួល !!: យឺតពេល 3 វិនាទី តាមសំណើ
+      setTimeout(() => {
+        setSearchTerm(''); 
+        setSelectedStudentId(''); 
+        setIsSearchFocused(false); 
+      }, 3000); // 3 វិនាទី
       
     } catch (error) {
       console.error('Check-in Error (dbWrite):', error);
@@ -1150,5 +1155,4 @@ function App() {
 const container = document.getElementById('root');
 const root = ReactDOM.createRoot(container);
 root.render(<App />);
-
 
