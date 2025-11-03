@@ -119,22 +119,10 @@ window.StudentCard = ({
         }}
       />
       
-      <div className="pt-16 text-center">
-        <p className="text-3xl font-bold text-white">
-          {student.name || t.noName}
-        </p>
-        <p className="text-lg text-blue-200">
-          {t.idNumber}: {student.idNumber || 'N/A'}
-        </p>
-        <p className="text-lg text-blue-200">
-          {t.class}: {student.class || 'N/A'}
-        </p>
-      </div>
-      
       {/* !! START: កែសម្រួល Layout តាមសំណើ !! */}
       <div className="my-6">
 
-        {/* Case 1: Student IS ON BREAK (Can Check In) - មិនទាន់កែ Layout នេះ */}
+        {/* Case 1: Student IS ON BREAK (Can Check In) */}
         {canCheckIn && (
           <>
             <div className="text-center">
@@ -158,7 +146,8 @@ window.StudentCard = ({
 
         {/* Case 2: Student IS NOT ON BREAK (Can't Check In) AND CAN Check Out */}
         {!canCheckIn && canCheckOut && (
-          <div className="flex justify-between items-center space-x-4">
+          // !! កែសម្រួល !!: ដាក់ប៊ូតុង និង Status នៅកណ្តាល (ដូចក្នុងរូប)
+          <div className="flex justify-center items-center space-x-4">
             {/* ប៊ូតុង Icon "ចេញសម្រាក" ថ្មីនៅខាងឆ្វេង */}
             <button
               onClick={() => handleCheckOut(student.id)}
@@ -168,9 +157,9 @@ window.StudentCard = ({
               <IconCheckOut />
             </button>
             
-            {/* ស្ថានភាព (Status) នៅកណ្តាល */}
-            <div className="flex-1 text-center">
-              <p className={`inline-flex items-center px-5 py-2 rounded-full text-md font-semibold ${statusClass}`}>
+            {/* ស្ថានភាព (Status) នៅក្បែរ */}
+            <div className="text-center">
+              <p className={`inline-flex items-center px-5 py-3 rounded-full text-lg font-semibold ${statusClass}`}>
                 {statusText}
                 {isSpecialCase && <IconSpecial />}
               </p>
@@ -762,4 +751,5 @@ window.InputPromptModal = ({ promptInfo, onSubmit, onCancel, t }) => {
     </div>
   );
 };
+
 
