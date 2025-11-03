@@ -1,7 +1,7 @@
 // !! ថ្មី !!: ទាញអថេរ និង Icons ពី Global Scope
 const {
   calculateDuration,
-  OVERTIME_LIMIT_MINUTES,
+  // OVERTIME_LIMIT_MINUTES, // !! លុប !!: ឥឡូវទាញពី Prop វិញ
   IconCheckOut, IconCheckIn, IconSearch, IconClock, IconCheckCircle,
   IconTicket, IconClose, IconTrash, IconNoSymbol, IconAlert,
   IconSpecial, IconDotsVertical, IconLock, IconQrCode, IconPencil,
@@ -20,7 +20,8 @@ window.StudentCard = ({
   onDeleteClick, 
   totalPasses, 
   t, 
-  checkInMode 
+  checkInMode,
+  overtimeLimit // !! ថ្មី !!: ទទួល Prop នាទី Overtime
 }) => {
   
   const studentBreaks = attendance[student.id] || [];
@@ -37,7 +38,8 @@ window.StudentCard = ({
   
   if (activeBreak) {
     const elapsedMins = calculateDuration(activeBreak.checkOutTime, now.toISOString());
-    const isOvertime = elapsedMins > OVERTIME_LIMIT_MINUTES;
+    // !! កែសម្រួល !!: ប្រើ overtimeLimit ពី Prop
+    const isOvertime = elapsedMins > overtimeLimit; 
     
     const passNumberDisplay = activeBreak.passNumber ? ` (${t.statusPass}: ${activeBreak.passNumber})` : '';
     statusText = `${t.statusOnBreak}${passNumberDisplay} (${elapsedMins} ${t.statusMinutes})`; 
@@ -54,8 +56,9 @@ window.StudentCard = ({
   } else if (completedBreaks.length > 0) {
     const lastBreak = completedBreaks[completedBreaks.length - 1]; 
     const duration = calculateDuration(lastBreak.checkOutTime, lastBreak.checkInTime);
-    const isCompletedOvertime = duration > OVERTIME_LIMIT_MINUTES;
-    const overtimeMins = isCompletedOvertime ? duration - OVERTIME_LIMIT_MINUTES : 0;
+    // !! កែសម្រួល !!: ប្រើ overtimeLimit ពី Prop
+    const isCompletedOvertime = duration > overtimeLimit;
+    const overtimeMins = isCompletedOvertime ? duration - overtimeLimit : 0;
     
     statusText = isCompletedOvertime
       ? `${t.statusCompleted} (${t.statusOvertime} ${overtimeMins} ${t.statusMinutes})`
@@ -129,7 +132,7 @@ window.StudentCard = ({
       </div>
       
       <div className="my-6 text-center">
-         <p className={`inline-flex items-center px-5 py-2 rounded-full text-md font-semibold ${statusClass}`}>
+        <p className={`inline-flex items-center px-5 py-2 rounded-full text-md font-semibold ${statusClass}`}>
           {statusText}
           {isSpecialCase && <IconSpecial />}
         </p>
@@ -171,7 +174,7 @@ window.StudentCard = ({
   );
 };
 
-window.CompletedStudentListCard = ({ student, record, onClick, isSelected, onSelect, onDeleteClick, isSelectionMode, t }) => {
+window.CompletedStudentListCard = ({ student, record, onClick, isSelected, onSelect, onDeleteClick, isSelectionMode, t, overtimeLimit }) => { // !! ថ្មី !!
   
   const formatTime = (isoString) => {
     if (!isoString) return 'N/A';
@@ -183,8 +186,9 @@ window.CompletedStudentListCard = ({ student, record, onClick, isSelected, onSel
 
   const duration = calculateDuration(record?.checkOutTime, record?.checkInTime);
   
-  const isOvertime = duration > OVERTIME_LIMIT_MINUTES;
-  const overtimeMins = isOvertime ? duration - OVERTIME_LIMIT_MINUTES : 0;
+  // !! កែសម្រួល !!: ប្រើ overtimeLimit ពី Prop
+  const isOvertime = duration > overtimeLimit;
+  const overtimeMins = isOvertime ? duration - overtimeLimit : 0;
   const cardColor = isOvertime 
     ? 'bg-red-800/30 backdrop-blur-lg border border-red-500/30' 
     : 'bg-white/10 backdrop-blur-lg'; 
@@ -237,7 +241,7 @@ window.CompletedStudentListCard = ({ student, record, onClick, isSelected, onSel
         )}
         {record.breakType === 'special' && (
            <p className="text-sm font-semibold text-purple-300">
-            ({t.specialCase})
+           ({t.specialCase})
            </p>
         )}
       </div>
@@ -366,7 +370,7 @@ window.PasswordConfirmationModal = ({ prompt, onSubmit, onCancel, t }) => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-lg"
-            placeholder={t.passwordPrompt}
+            placeholder={t.passwordPlaceholder}
             autoFocus
           />
           {prompt.error && (
@@ -408,7 +412,7 @@ window.AdminActionModal = ({ isOpen, onClose, onSelectClick, onBulkClick, isBulk
         <div className="w-16 h-1.5 bg-gray-300 rounded-full mx-auto mb-4"></div>
         
         <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
-          {t.adminFunctions}
+          {t.adminTitle}
         </h3>
         
         <div className="space-y-3">
@@ -432,7 +436,7 @@ window.AdminActionModal = ({ isOpen, onClose, onSelectClick, onBulkClick, isBulk
               className="w-full mt-2 px-4 py-3 text-lg font-bold text-white bg-red-500 hover:bg-red-600 rounded-lg disabled:opacity-50"
               disabled={isBulkLoading}
             >
-              {isBulkLoading ? t.deleting : t.deleteDaily}
+              {isBulkLoading ? t.deleting : t.deleteByDateButton}
             </button>
           </div>
           
@@ -449,7 +453,7 @@ window.AdminActionModal = ({ isOpen, onClose, onSelectClick, onBulkClick, isBulk
               className="w-full mt-2 px-4 py-3 text-lg font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg disabled:opacity-50"
               disabled={isBulkLoading}
             >
-              {isBulkLoading ? t.deleting : t.deleteMonthly}
+              {isBulkLoading ? t.deleting : t.deleteByMonthButton}
             </button>
           </div>
           
@@ -470,7 +474,7 @@ window.CompletedListHeader = ({ onAdminClick, onMultiDeleteClick, onCancelMultiS
           <button
             onClick={onAdminClick}
             className="p-3 rounded-full text-white bg-white/10 transition-colors hover:bg-white/30"
-            title={t.adminFunctions}
+            title={t.adminTitle}
           >
             <IconDotsVertical />
           </button>
@@ -518,7 +522,7 @@ window.DeleteConfirmationModal = ({ recordToDelete, onCancel, onConfirm, t }) =>
         >
           <IconAlert />
           <h3 className="text-2xl font-bold text-gray-900 mb-2">
-            {t.deleteConfirmTitle}
+            {t.deleteTitle}
           </h3>
           <p className="text-gray-600 mb-6">
             {t.deleteConfirmMessage(student.name)}
@@ -569,7 +573,7 @@ window.QrScannerModal = ({ isOpen, onClose, onScanSuccess, lastScannedInfo, isSc
             html5QrCode.start({ facingMode: "environment" }, config, qrCodeSuccessCallback)
               .catch(err => {
                 console.error("Unable to start scanner", err);
-                setErrorMessage(t.scanCameraError);
+                setErrorMessage(t.cameraError);
               });
         }
       }
@@ -616,7 +620,7 @@ window.QrScannerModal = ({ isOpen, onClose, onScanSuccess, lastScannedInfo, isSc
         </button>
         
         <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
-          {t.scanTitle}
+          {t.scanToComeBack}
         </h3>
         
         <div id={scannerId} className="w-full"></div> 
@@ -625,7 +629,7 @@ window.QrScannerModal = ({ isOpen, onClose, onScanSuccess, lastScannedInfo, isSc
           {isScannerBusy && (
              <div className="flex justify-center items-center">
                 <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-blue-600 text-xl font-bold ml-3">{t.scanProcessing}</p>
+                <p className="text-blue-600 text-xl font-bold ml-3">{t.processing}</p>
              </div>
           )}
           
@@ -635,7 +639,7 @@ window.QrScannerModal = ({ isOpen, onClose, onScanSuccess, lastScannedInfo, isSc
           
           {!isScannerBusy && lastScannedInfo && lastScannedInfo.status === 'success' && (
             <p className="text-green-600 text-xl font-bold animate-pulse">
-              ✔ {t.scanSuccess}: {lastScannedInfo.name}
+              ✔ {t.scanned}: {lastScannedInfo.name}
             </p>
           )}
           
@@ -668,7 +672,7 @@ window.InfoAlertModal = ({ alertInfo, onClose, t }) => {
         {isError ? <IconAlert /> : <IconCheckCircleFill />}
         
         <h3 className="text-2xl font-bold text-gray-900 mb-2">
-          {isError ? t.problem : t.success}
+          {isError ? t.alertErrorTitle : t.alertSuccessTitle}
         </h3>
         
         <p className="text-gray-600 mb-6" style={{ whiteSpace: 'pre-line' }}>
