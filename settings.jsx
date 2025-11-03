@@ -6,13 +6,14 @@
 const SettingsPage = ({ 
   t, language, setLanguage, background, setBackground,
   checkInMode, onEditCheckInMode, onEditPassword,
-  passesInUse, totalPasses, onEditTotalPasses
+  passesInUse, totalPasses, onEditTotalPasses,
+  overtimeLimit, onEditOvertimeLimit // !! ថ្មី !!: បន្ថែម Props សម្រាប់ Overtime
 }) => {
   
   // ទាញ Icons ពី Global Scope
   const { 
     IconLanguage, IconPalette, IconLock, IconTicket, IconSettings,
-    backgroundStyles 
+    backgroundStyles, IconTimer // !! ថ្មី !!: បន្ថែម IconTimer
   } = window.appSetup;
 
   return (
@@ -20,7 +21,7 @@ const SettingsPage = ({
       <h2 className="text-3xl font-bold text-center mb-6">{t.settingsTitle}</h2>
 
       {/* --- 1. គ្រប់គ្រងកាត --- */}
-      <SettingCard title={t.passManagement} icon={<IconTicket />}>
+      <SettingCard title={t.passCardManagement} icon={<IconTicket />}>
         <PassesInfoSetting
           t={t}
           passesInUse={passesInUse}
@@ -29,7 +30,16 @@ const SettingsPage = ({
         />
       </SettingCard>
 
-      {/* --- 2. សុវត្ថិភាព --- */}
+      {/* --- !! ថ្មី !!: 2. ការកំណត់លើសម៉ោង --- */}
+      <SettingCard title={t.overtimeSettings} icon={<IconTimer />}>
+        <OvertimeLimitSetting
+          t={t}
+          overtimeLimit={overtimeLimit}
+          onEditOvertimeLimit={onEditOvertimeLimit}
+        />
+      </SettingCard>
+
+      {/* --- 3. សុវត្ថិភាព --- */}
       <SettingCard title={t.security} icon={<IconLock />}>
         <button
           onClick={onEditPassword}
@@ -45,7 +55,7 @@ const SettingsPage = ({
         />
       </SettingCard>
 
-      {/* --- 3. ភាសា --- */}
+      {/* --- 4. ភាសា --- */}
       <SettingCard title={t.language} icon={<IconLanguage />}>
         <div className="flex space-x-2">
           <button
@@ -63,7 +73,7 @@ const SettingsPage = ({
         </div>
       </SettingCard>
       
-      {/* --- 4. ផ្ទៃខាងក្រោយ --- */}
+      {/* --- 5. ផ្ទៃខាងក្រោយ --- */}
       <SettingCard title={t.background} icon={<IconPalette />}>
         <div className="grid grid-cols-2 gap-4">
           {Object.keys(backgroundStyles).map(key => (
@@ -107,11 +117,11 @@ const PassesInfoSetting = ({ t, passesInUse, totalPasses, onEditTotal }) => {
       <div className="flex justify-around text-white">
         <div className="text-center">
           <p className="text-4xl font-bold text-red-300">{passesInUse}</p>
-          <p className="text-lg text-blue-200">{t.passInUse}</p>
+          <p className="text-lg text-blue-200">{t.passesInUse}</p>
         </div>
         <div className="text-center">
           <p className="text-4xl font-bold text-green-300">{passesAvailable}</p>
-          <p className="text-lg text-blue-200">{t.passAvailable}</p>
+          <p className="text-lg text-blue-200">{t.passesAvailable}</p>
         </div>
         <div className="text-center">
           <p className="text-4xl font-bold">{totalPasses}</p>
@@ -130,6 +140,29 @@ const PassesInfoSetting = ({ t, passesInUse, totalPasses, onEditTotal }) => {
     </div>
   );
 };
+
+// --- !! ថ្មី !!: Component សម្រាប់ កំណត់នាទីលើសម៉ោង ---
+const OvertimeLimitSetting = ({ t, overtimeLimit, onEditOvertimeLimit }) => {
+  const { IconPencil } = window.appSetup;
+
+  return (
+    <div className="bg-white/10 backdrop-blur-lg rounded-2xl shadow-lg p-6 text-center">
+      <p className="text-lg text-blue-200 mb-2">{t.overtimeLimit}</p>
+      <p className="text-6xl font-bold text-white mb-4">
+        {overtimeLimit} 
+        <span className="text-3xl ml-2">{t.minutes}</span>
+      </p>
+      <button
+        onClick={onEditOvertimeLimit}
+        className="flex items-center justify-center w-full px-4 py-3 rounded-full text-lg text-white font-bold transition-all shadow-lg bg-blue-500 hover:bg-blue-600"
+      >
+        <IconPencil />
+        {t.overtimeLimit}
+      </button>
+    </div>
+  );
+};
+
 
 // --- Component សម្រាប់ ប្ដូររបៀប Check-in ---
 const CheckInModeSetting = ({ t, checkInMode, onEditCheckInMode }) => {
