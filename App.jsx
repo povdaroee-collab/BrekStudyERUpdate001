@@ -39,7 +39,7 @@ function App() {
   const [modalStudent, setModalStudent] = useState(null);
   const [now, setNow] = useState(new Date());
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [searchResults, setSearchResults] = useState([]);
+  // const [searchResults, setSearchResults] = useState([]); // !! លុប State នេះ !!
   const [passwordPrompt, setPasswordPrompt] = useState({ isOpen: false });
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedRecords, setSelectedRecords] = useState([]);
@@ -323,6 +323,48 @@ function App() {
   const studentsOnBreakCount = sortedStudentsOnBreak.length;
   
   
+  // !! ថ្មី !!: ផ្លាស់ប្តូរ Search Logic ទៅជា useMemo ដើម្បីឲ្យវា Real-time
+  const searchResults = React.useMemo(() => {
+    const normalizedSearch = String(searchTerm).replace(/\s+/g, '').toLowerCase();
+
+    if (normalizedSearch === "" || !isSearchFocused) { // កែសម្រួល: មិនបាច់បង្ហាញទេ បើ Search bar មិន Focus
+      return []; 
+    }
+    
+    // ប្រើ 'attendance' state ដោយផ្ទាល់ មិនបាច់ dùng Ref
+    const currentAttendance = attendance; 
+    const currentT = t;
+      
+    const matches = students.filter(student => 
+      (student.name && student.name.replace(/\s+/g, '').toLowerCase().includes(normalizedSearch)) ||
+      (student.idNumber && String(student.idNumber).replace(/\s+/g, '').includes(normalizedSearch))
+    ).slice(0, 10); 
+    
+    const matchesWithStatus = matches.map(student => {
+      const studentBreaks = currentAttendance[student.id] || []; 
+      const activeBreak = studentBreaks.find(r => r.checkOutTime && !r.checkInTime);
+      const completedBreaks = studentBreaks.filter(r => r.checkOutTime && r.checkInTime);
+
+      let statusText = currentT.statusNotYet; 
+      let passNumber = null;
+      let statusColor = 'text-gray-500';
+
+      if (activeBreak) {
+        statusText = currentT.statusOnBreak; 
+        passNumber = activeBreak.passNumber || null;
+        statusColor = 'text-yellow-600';
+      } else if (completedBreaks.length > 0) {
+        statusText = currentT.statusCompleted; 
+        statusColor = 'text-green-600';
+      }
+      
+      return { ...student, statusText, passNumber, statusColor };
+    });
+    
+    return matchesWithStatus;
+
+  }, [searchTerm, students, attendance, t, isSearchFocused]); // !! កែសម្រួល !!: ឥឡូវវាអាស្រ័យលើ attendance និង isSearchFocused
+
   // Effect សម្រាប់គ្រប់គ្រង Scanner បន្ទាប់ពី Firebase Update
   useEffect(() => {
     if (scannerTriggeredCheckIn) {
@@ -407,7 +449,7 @@ function App() {
       
       setSearchTerm('');
       setSelectedStudentId('');
-      setSearchResults([]); 
+      // setSearchResults([]); // !! លុប !!
       setIsSearchFocused(false); 
     } catch (error) {
       console.error('Check-out Error (dbWrite):', error);
@@ -443,7 +485,7 @@ function App() {
       
       setSearchTerm(''); 
       setSelectedStudentId(''); 
-      setSearchResults([]); 
+      // setSearchResults([]); // !! លុប !!
       setIsSearchFocused(false); 
       
     } catch (error) {
@@ -747,54 +789,19 @@ function App() {
   
   // --- Search Handlers ---
   
+  // !! កែសម្រួល !!: ធ្វើឲ្យ Search Handler នេះសាមញ្ញ
   const handleSearchChange = React.useCallback((e) => {
     const value = e.target.value;
     setSearchTerm(value);
     setSelectedStudentId(""); 
-    
-    const normalizedSearch = String(value).replace(/\s+/g, '').toLowerCase();
-
-    if (normalizedSearch === "") {
-      setSearchResults([]); 
-    } else {
-      const currentAttendance = attendanceRef.current;
-      const currentT = tRef.current;
-        
-      const matches = students.filter(student => 
-        (student.name && student.name.replace(/\s+/g, '').toLowerCase().includes(normalizedSearch)) ||
-        (student.idNumber && String(student.idNumber).replace(/\s+/g, '').includes(normalizedSearch))
-      ).slice(0, 10); 
-      
-      const matchesWithStatus = matches.map(student => {
-        const studentBreaks = currentAttendance[student.id] || []; 
-        const activeBreak = studentBreaks.find(r => r.checkOutTime && !r.checkInTime);
-        const completedBreaks = studentBreaks.filter(r => r.checkOutTime && r.checkInTime);
-
-        let statusText = currentT.statusNotYet; 
-        let passNumber = null;
-        let statusColor = 'text-gray-500';
-
-        if (activeBreak) {
-          statusText = currentT.statusOnBreak; 
-          passNumber = activeBreak.passNumber || null;
-          statusColor = 'text-yellow-600';
-        } else if (completedBreaks.length > 0) {
-          statusText = currentT.statusCompleted; 
-          statusColor = 'text-green-600';
-        }
-        
-        return { ...student, statusText, passNumber, statusColor };
-      });
-      
-      setSearchResults(matchesWithStatus);
-    }
-  }, [students]);
+    // Logic ទាំងអស់ ត្រូវបានផ្លាស់ទីទៅ useMemo
+  }, []); // មិនចាំបាច់មាន dependencies ទៀតទេ
 
 
   const handleSelectStudentFromList = React.useCallback((student) => {
     setSearchTerm(student.name || String(student.idNumber)); 
     setSelectedStudentId(student.id); 
-    setSearchResults([]); 
+    // setSearchResults([]); // !! លុប !!
     setIsSearchFocused(false); 
   }, []);
 
@@ -904,13 +911,14 @@ function App() {
                       value={searchTerm}
                       onChange={handleSearchChange}
                       onFocus={() => { setIsSearchFocused(true); setAuthError(null); }}
-                      onBlur={() => { setTimeout(() => { if (!document.activeElement.classList.contains('search-result-button')) { setIsSearchFocused(false); setSearchResults([]); } }, 200); }}
+                      onBlur={() => { setTimeout(() => { if (!document.activeElement.classList.contains('search-result-button')) { setIsSearchFocused(false); } }, 200); }} // !! កែសម្រួល !!: លុប setSearchResults
                       onKeyDown={(e) => { if (e.key === 'Enter') { e.target.blur(); setIsSearchFocused(false); } }}
                       placeholder={t.searchPlaceholder} 
                       className="block w-full px-6 py-4 bg-white/20 border border-white/30 rounded-full text-white text-lg placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white shadow-inner"
                     />
                     
-                    {isSearchFocused && searchResults.length > 0 && (
+                    {/* !! កែសម្រួល !!: លក្ខខណ្ឌ isSearchFocused ឥឡូវត្រូវបានគ្រប់គ្រងដោយ useMemo */}
+                    {searchResults.length > 0 && (
                       <div className="absolute z-10 w-full max-w-md mt-2 bg-white/90 backdrop-blur-lg rounded-2xl shadow-lg max-h-80 overflow-y-auto">
                         {searchResults.map(student => ( 
                           <button
@@ -961,6 +969,7 @@ function App() {
                   overtimeLimit={overtimeLimit} // !! ថ្មី !!
                 />
               )}
+              {/* !! កែសម្រួល !!: លក្ខខណ្ឌ isSearchFocused ឥឡូវត្រូវបានគ្រប់គ្រងដោយ useMemo */}
               {!selectedStudent && searchTerm !== "" && searchResults.length === 0 && isSearchFocused && (
                 <p className="text-center text-white/70 text-lg mt-10">{t.studentNotFound}</p>
               )}
@@ -1141,4 +1150,5 @@ function App() {
 const container = document.getElementById('root');
 const root = ReactDOM.createRoot(container);
 root.render(<App />);
+
 
