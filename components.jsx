@@ -90,7 +90,7 @@ window.StudentCard = ({
     student.photoUrl ||
     `https://placehold.co/128x128/EBF4FF/76A9FA?text=${student.name ? student.name.charAt(0) : 'N'}`;
 
-  // !! ថ្មី !!: សម្រេចចិត្តថាតើប៊ូតុង "ចូលវិញ" ត្រូវធ្វើអ្វី
+  // សម្រេចចិត្តថាតើប៊ូតុង "ចូលវិញ" ត្រូវធ្វើអ្វី
   const checkInAction = checkInMode === 'scan' 
     ? handleOpenQrScanner 
     : () => handleCheckIn(student.id);
@@ -131,45 +131,64 @@ window.StudentCard = ({
         </p>
       </div>
       
-      <div className="my-6 text-center">
-        <p className={`inline-flex items-center px-5 py-2 rounded-full text-md font-semibold ${statusClass}`}>
-          {statusText}
-          {isSpecialCase && <IconSpecial />}
-        </p>
-      </div>
+      {/* !! START: កែសម្រួល Layout តាមសំណើ !! */}
+      <div className="my-6">
 
-      {(canCheckOut || canCheckIn) && (
-        <div className="flex flex-col space-y-3">
-          {canCheckOut && (
+        {/* Case 1: Student IS ON BREAK (Can Check In) - មិនទាន់កែ Layout នេះ */}
+        {canCheckIn && (
+          <>
+            <div className="text-center">
+              <p className={`inline-flex items-center px-5 py-2 rounded-full text-md font-semibold ${statusClass}`}>
+                {statusText}
+                {isSpecialCase && <IconSpecial />}
+              </p>
+            </div>
+            <div className="flex flex-col space-y-3 mt-6">
+              <button
+                onClick={checkInAction}
+                disabled={!canCheckIn}
+                className="flex items-center justify-center w-full px-4 py-4 rounded-full text-lg text-blue-800 font-bold transition-all transform hover:scale-105 shadow-lg bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
+              >
+                <IconCheckIn />
+                {t.checkIn}
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* Case 2: Student IS NOT ON BREAK (Can't Check In) AND CAN Check Out */}
+        {!canCheckIn && canCheckOut && (
+          <div className="flex justify-between items-center space-x-4">
+            {/* ប៊ូតុង Icon "ចេញសម្រាក" ថ្មីនៅខាងឆ្វេង */}
             <button
               onClick={() => handleCheckOut(student.id)}
-              disabled={!canCheckOut} 
-              className="flex items-center justify-center w-full px-4 py-4 rounded-full text-lg text-white font-bold transition-all transform hover:scale-105 shadow-lg bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
+              className="flex-shrink-0 p-4 rounded-full text-lg text-white font-bold transition-all transform hover:scale-105 shadow-lg bg-red-500 hover:bg-red-600"
+              title={t.checkOut}
             >
               <IconCheckOut />
-              {t.checkOut}
             </button>
-          )}
-          
-          {canCheckIn && (
-            <button
-              onClick={checkInAction} // !! កែសម្រួល !!
-              disabled={!canCheckIn}
-              className="flex items-center justify-center w-full px-4 py-4 rounded-full text-lg text-blue-800 font-bold transition-all transform hover:scale-105 shadow-lg bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
-            >
-              <IconCheckIn />
-              {t.checkIn}
-            </button>
-          )}
-        </div>
-      )}
+            
+            {/* ស្ថានភាព (Status) នៅកណ្តាល */}
+            <div className="flex-1 text-center">
+              <p className={`inline-flex items-center px-5 py-2 rounded-full text-md font-semibold ${statusClass}`}>
+                {statusText}
+                {isSpecialCase && <IconSpecial />}
+              </p>
+            </div>
+          </div>
+        )}
+        
+        {/* Case 3: Student IS NOT ON BREAK (Can't Check In) AND CANNOT Check Out (Passes Full) */}
+        {!canCheckIn && !canCheckOut && (
+          <div className="flex items-center justify-center w-full px-4 py-4 rounded-full text-lg text-white font-bold bg-red-600/50 opacity-80 cursor-not-allowed">
+            <IconNoSymbol />
+            {/* statusText នឹងក្លាយជា "កាតអស់!" ក្នុងករណីនេះ */}
+            {statusText} 
+          </div>
+        )}
+      </div>
+      {/* !! END: កែសម្រួល Layout តាមសំណើ !! */}
       
-      {!canCheckOut && statusText.startsWith(t.statusPassOut) && (
-        <div className="flex items-center justify-center w-full px-4 py-4 rounded-full text-lg text-white font-bold bg-red-600/50 opacity-80 cursor-not-allowed">
-          <IconNoSymbol />
-          {t.passOutWarning}
-        </div>
-      )}
     </div>
   );
 };
@@ -743,3 +762,4 @@ window.InputPromptModal = ({ promptInfo, onSubmit, onCancel, t }) => {
     </div>
   );
 };
+
