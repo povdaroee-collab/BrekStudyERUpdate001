@@ -120,6 +120,19 @@ window.StudentCard = ({
       />
       
       {/* !! START: កែសម្រួល Layout តាមសំណើ !! */}
+      {/* 1. បន្ថែម pt-16 និង ព័ត៌មានសិស្ស ត្រឡប់មកវិញ */}
+      <div className="pt-16 text-center">
+        <p className="text-3xl font-bold text-white">
+          {student.name || t.noName}
+        </p>
+        <p className="text-lg text-blue-200">
+          {t.idNumber}: {student.idNumber || 'N/A'}
+        </p>
+        <p className="text-lg text-blue-200">
+          {t.class}: {student.class || 'N/A'}
+        </p>
+      </div>
+
       <div className="my-6">
 
         {/* Case 1: Student IS ON BREAK (Can Check In) */}
@@ -146,9 +159,17 @@ window.StudentCard = ({
 
         {/* Case 2: Student IS NOT ON BREAK (Can't Check In) AND CAN Check Out */}
         {!canCheckIn && canCheckOut && (
-          // !! កែសម្រួល !!: ដាក់ប៊ូតុង និង Status នៅកណ្តាល (ដូចក្នុងរូប)
+          // 2. ដាក់ Status Text មុន, ដាក់ Icon ខាងស្តាំ
           <div className="flex justify-center items-center space-x-4">
-            {/* ប៊ូតុង Icon "ចេញសម្រាក" ថ្មីនៅខាងឆ្វេង */}
+            {/* ស្ថានភាព (Status) នៅខាងឆ្វេង */}
+            <div className="text-center">
+              <p className={`inline-flex items-center px-5 py-3 rounded-full text-lg font-semibold ${statusClass}`}>
+                {statusText}
+                {isSpecialCase && <IconSpecial />}
+              </p>
+            </div>
+
+            {/* ប៊ូតុង Icon "ចេញសម្រាក" ថ្មីនៅខាងស្តាំ */}
             <button
               onClick={() => handleCheckOut(student.id)}
               className="flex-shrink-0 p-4 rounded-full text-lg text-white font-bold transition-all transform hover:scale-105 shadow-lg bg-red-500 hover:bg-red-600"
@@ -156,14 +177,6 @@ window.StudentCard = ({
             >
               <IconCheckOut />
             </button>
-            
-            {/* ស្ថានភាព (Status) នៅក្បែរ */}
-            <div className="text-center">
-              <p className={`inline-flex items-center px-5 py-3 rounded-full text-lg font-semibold ${statusClass}`}>
-                {statusText}
-                {isSpecialCase && <IconSpecial />}
-              </p>
-            </div>
           </div>
         )}
         
@@ -751,5 +764,6 @@ window.InputPromptModal = ({ promptInfo, onSubmit, onCancel, t }) => {
     </div>
   );
 };
+
 
 
