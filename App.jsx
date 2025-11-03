@@ -60,7 +60,8 @@ function App() {
   const [background, setBackground] = useState(localStorage.getItem('break_bg') || 'style1');
   const [adminPassword, setAdminPassword] = useState(null); 
   const [checkInMode, setCheckInMode] = useState('scan'); 
-  
+  const [overtimeLimit, setOvertimeLimit] = useState(15); // !! ថ្មី !!: State សម្រាប់នាទី Overtime
+
   // --- Refs សម្រាប់ Stale State ---
   const t = translations[language] || translations['km'];
   const tRef = React.useRef(t); 
@@ -155,6 +156,7 @@ function App() {
     if (dbRead && dbWrite) {
       setLoading(true);
       
+      // 1. ទាញបញ្ជី Students (dbRead)
       const studentsRef = ref(dbRead, 'students');
       const unsubscribeStudents = onValue(studentsRef, (snapshot) => {
           const studentsData = snapshot.val();
@@ -181,8 +183,9 @@ function App() {
           setLoading(false);
       });
 
-      const attendanceRef = ref(dbWrite, 'attendance');
-      const qAttendance = rtdbQuery(attendanceRef, orderByChild('date'), equalTo(appSetup.todayString));
+      // 2. ទាញ Attendance ថ្ងៃនេះ (dbWrite)
+      const attendanceRefDb = ref(dbWrite, 'attendance');
+      const qAttendance = rtdbQuery(attendanceRefDb, orderByChild('date'), equalTo(appSetup.todayString));
       const unsubscribeAttendance = onValue(qAttendance, (snapshot) => {
           const attMap = {};
           const attData = snapshot.val();
@@ -205,6 +208,7 @@ function App() {
           setAuthError(`Attendance Fetch Error: ${error.message}`);
       });
       
+      // 3. ទាញ Total Passes (dbWrite)
       const passRef = ref(dbWrite, 'passManagement/totalPasses');
       const unsubscribePasses = onValue(passRef, (snapshot) => {
         const total = snapshot.val() || 0; 
@@ -214,6 +218,7 @@ function App() {
         console.error('Total Passes Fetch Error (dbWrite):', error);
       });
       
+      // 4. ទាញ Admin Password (dbWrite)
       const passwordRef = ref(dbWrite, 'passManagement/adminPassword');
       const unsubscribePassword = onValue(passwordRef, (snapshot) => {
         const pass = snapshot.val();
@@ -228,6 +233,7 @@ function App() {
         setAdminPassword('4545ak0'); 
       });
       
+      // 5. ទាញ CheckIn Mode (dbWrite)
       const checkInModeRef = ref(dbWrite, 'passManagement/checkInMode');
       const unsubscribeCheckInMode = onValue(checkInModeRef, (snapshot) => {
         const mode = snapshot.val();
@@ -239,12 +245,29 @@ function App() {
         console.error('Check-in Mode Fetch Error (dbWrite):', error);
       });
       
+      // 6. !! ថ្មី !!: ទាញ Overtime Limit (dbWrite)
+      const overtimeRef = ref(dbWrite, 'passManagement/overtimeLimit');
+      const unsubscribeOvertime = onValue(overtimeRef, (snapshot) => {
+        const limit = snapshot.val();
+        if (limit && !isNaN(parseInt(limit))) {
+          setOvertimeLimit(parseInt(limit));
+          console.log(`Overtime limit set to: ${limit}`);
+        } else {
+          setOvertimeLimit(15); // Default
+          console.log("No overtime limit set in DB, defaulting to 15.");
+        }
+      }, (error) => {
+        console.error('Overtime Limit Fetch Error (dbWrite):', error);
+        setOvertimeLimit(15); // Default on error
+      });
+      
       return () => {
         unsubscribeStudents();
         unsubscribeAttendance();
         unsubscribePasses(); 
         unsubscribePassword();
         unsubscribeCheckInMode();
+        unsubscribeOvertime(); // !! ថ្មី !!
       };
     }
   }, [dbRead, dbWrite, appSetup.todayString, rtdbQuery, ref, onValue, orderByChild, equalTo]);
@@ -257,12 +280,12 @@ function App() {
         const activeBreak = breaks.find(r => r.checkOutTime && !r.checkInTime);
         if (!activeBreak) return null; 
         const elapsedMins = calculateDuration(activeBreak.checkOutTime, now.toISOString()); 
-        const isOvertime = elapsedMins > appSetup.OVERTIME_LIMIT_MINUTES; 
+        // !! កែសម្រួល !!: ប្រើ State 'overtimeLimit'
+        const isOvertime = elapsedMins > overtimeLimit; 
         return { student, record: activeBreak, elapsedMins, isOvertime };
       })
       .filter(Boolean) 
       .sort((a, b) => {
-        // !! កែសម្រួល !!: Logic Sort ថ្មី
         // 1. Overtime តែងតែនៅខាងលើ
         if (a.isOvertime !== b.isOvertime) {
           return a.isOvertime ? -1 : 1; 
@@ -276,7 +299,8 @@ function App() {
         // 3. បើទាំងពីរមិន Overtime, យកអ្នកទើបចេញ (នាទីតិច) មកលើ
         return a.elapsedMins - b.elapsedMins; 
       });
-  }, [students, attendance, now, calculateDuration]); // !! កែសម្រួល !!
+  // !! កែសម្រួល !!: បន្ថែម overtimeLimit ក្នុង dependency array
+  }, [students, attendance, now, calculateDuration, overtimeLimit]); 
 
   const allCompletedBreaks = React.useMemo(() => {
     const breaks = [];
@@ -604,6 +628,39 @@ function App() {
     );
   }, [handleOpenPasswordModal, tRef, totalPasses, dbWrite, ref, set, showAlert]);
   
+  // !! ថ្មី !!: មុខងារកែសម្រួល Overtime Limit
+  const handleEditOvertimeLimit = React.useCallback(() => {
+    handleOpenPasswordModal(
+      tRef.current.passwordRequired,
+      () => {
+        setInputPrompt({
+          isOpen: true,
+          title: tRef.current.overtimeLimit,
+          message: tRef.current.overtimeLimitPrompt,
+          defaultValue: overtimeLimit,
+          type: 'number',
+          onSubmit: (newLimitString) => {
+            const newLimit = parseInt(newLimitString);
+            if (newLimitString && !isNaN(newLimit) && newLimit > 0) {
+              const overtimeRef = ref(dbWrite, 'passManagement/overtimeLimit');
+              set(overtimeRef, newLimit)
+                .then(() => {
+                  showAlert(tRef.current.overtimeLimitSuccess, 'success');
+                })
+                .catch(err => {
+                  setAuthError(`Error setting overtime limit: ${err.message}`);
+                });
+            } else if (newLimitString) {
+              showAlert(tRef.current.invalidNumber, 'error');
+            }
+            setInputPrompt({ isOpen: false }); 
+          },
+          onCancel: () => setInputPrompt({ isOpen: false })
+        });
+      }
+    );
+  }, [handleOpenPasswordModal, tRef, overtimeLimit, dbWrite, ref, set, showAlert]);
+
   const handleEditPassword = React.useCallback(() => {
     handleOpenPasswordModal(
       tRef.current.passwordRequired, 
@@ -834,7 +891,7 @@ function App() {
               <button onClick={() => setAuthError(null)} className="absolute top-0 bottom-0 right-0 px-4 py-3 text-red-700">✕</button>
             </div>
           )}
-           
+            
           {/* --- PAGE 1: ស្វែងរក --- */}
           {!loading && currentPage === 'search' && (
             <div key="search-page" className="relative">
@@ -901,6 +958,7 @@ function App() {
                   totalPasses={totalPasses}
                   t={t}
                   checkInMode={checkInMode}
+                  overtimeLimit={overtimeLimit} // !! ថ្មី !!
                 />
               )}
               {!selectedStudent && searchTerm !== "" && searchResults.length === 0 && isSearchFocused && (
@@ -959,6 +1017,7 @@ function App() {
                     onDeleteClick={(e) => handleOpenPasswordModal(t.deleteConfirmMessage(student.name), () => handleConfirmDelete_Single(record.id))}
                     isSelectionMode={isSelectionMode}
                     t={t}
+                    overtimeLimit={overtimeLimit} // !! ថ្មី !!
                   />
                 ))
               ) : (
@@ -983,6 +1042,8 @@ function App() {
               passesInUse={studentsOnBreakCount}
               totalPasses={totalPasses}
               onEditTotalPasses={handleEditTotalPasses}
+              overtimeLimit={overtimeLimit} // !! ថ្មី !!
+              onEditOvertimeLimit={handleEditOvertimeLimit} // !! ថ្មី !!
             />
           )}
           
@@ -1008,6 +1069,7 @@ function App() {
                 totalPasses={totalPasses}
                 t={t}
                 checkInMode={checkInMode}
+                overtimeLimit={overtimeLimit} // !! ថ្មី !!
               />
               <button onClick={() => setModalStudent(null)} className="absolute top-4 right-4 text-white bg-white/10 p-2 rounded-full transition-all hover:bg-white/30">
                 <IconClose />
